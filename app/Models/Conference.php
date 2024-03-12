@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\Region;
 use Filament\Forms;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Fieldset;
@@ -17,6 +19,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use function app;
 
 class Conference extends Model
 {
@@ -110,19 +113,38 @@ class Conference extends Model
                             modifyQueryUsing: function (Builder $query, Forms\Get $get) {
                                 return $query->where('region', $get('region'));
                             })
-                        ->default(null)
+                        ->default(null),
+
+                    Actions::make([
+                        Action::make('star')
+                            ->label('Fill with factory data')
+                            ->icon('heroicon-m-star')
+                            ->visible(function (string $operation): bool {
+                                if ($operation !== 'create') {
+                                    return false;
+                                }
+                                if (! app()->environment('local')) {
+                                    return false;
+                                }
+                                return true;
+                            })
+                            ->action(function ($livewire) {
+                                $data = Conference::factory()->make()->toArray();
+                                $livewire->form->fill($data);
+                            })
+                    ])
                 ]),
 
-            Section::make('Speakers List')
-                ->schema([
-                    CheckboxList::make('speakers')
-                        ->relationship('speakers', 'name')
-                        ->columnSpanFull()
-                        ->columns(3)
-                        ->searchable()
-                        ->options(Speaker::all()->pluck('name', 'id'))
-                        ->required()
-                ])
+//            Section::make('Speakers List')
+//                ->schema([
+//                    CheckboxList::make('speakers')
+//                        ->relationship('speakers', 'name')
+//                        ->columnSpanFull()
+//                        ->columns(3)
+//                        ->searchable()
+//                        ->options(Speaker::all()->pluck('name', 'id'))
+//                        ->required()
+//                ])
         ];
     }
 }
